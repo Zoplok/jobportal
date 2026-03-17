@@ -1,0 +1,105 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────
+
+enum Role {
+  EMPLOYER
+  CANDIDATE
+}
+
+enum ApplicationStatus {
+  PENDING
+  REVIEWED
+  ACCEPTED
+  REJECTED
+}
+
+// ─── Models ──────────────────────────────────────────────
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  role      Role
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employer  Employer?
+  candidate Candidate?
+}
+
+model Employer {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @unique
+  companyName String
+  website     String?
+  description String?
+
+  user     User      @relation(fields: [userId], references: [id])
+  jobPosts JobPost[]
+}
+
+model Candidate {
+  id       Int     @id @default(autoincrement())
+  userId   Int     @unique
+  fullName String
+  phone    String?
+
+  user         User          @relation(fields: [userId], references: [id])
+  applications Application[]
+  resumes      Resume[]
+}
+
+model Resume {
+  id          Int      @id @default(autoincrement())
+  candidateId Int
+  title       String
+  fileUrl     String?
+  skills      Json?
+  experience  Json?
+  createdAt   DateTime @default(now())
+
+  candidate Candidate @relation(fields: [candidateId], references: [id])
+}
+
+model JobPost {
+  id          Int      @id @default(autoincrement())
+  employerId  Int
+  title       String
+  description String   @db.Text
+  location    String
+  salary      String?
+  isActive    Boolean  @default(true)
+  tags        Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  employer     Employer      @relation(fields: [employerId], references: [id])
+  applications Application[]
+
+  @@index([location, title])
+}
+
+model Application {
+  id          Int               @id @default(autoincrement())
+  candidateId Int
+  jobPostId   Int
+  status      ApplicationStatus @default(PENDING)
+  coverLetter String?           @db.Text
+  appliedAt   DateTime          @default(now())
+
+  candidate Candidate @relation(fields: [candidateId], references: [id])
+  jobPost   JobPost   @relation(fields: [jobPostId], references: [id])
+
+  @@unique([candidateId, jobPostId])
+}

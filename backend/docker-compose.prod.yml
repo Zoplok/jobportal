@@ -1,0 +1,30 @@
+services:
+  mysql:
+    image: mysql:8
+    container_name: jobportal_mysql_prod
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: new_password
+      MYSQL_DATABASE: jobportal
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jobportal_app_prod
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mysql
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - .env
+
+volumes:
+  mysql_data:
